@@ -86,11 +86,63 @@ class PlaylistWidget(QWidget):
     def move_item_up(self):
         current_row = self.song_list.currentRow()
         if current_row > 0:
+            # UI'da şarkıyı yukarı taşı
             self.song_list.insertItem(current_row - 1, self.song_list.takeItem(current_row))
             self.song_list.setCurrentRow(current_row - 1)
+            
+            # Playlist'te şarkıların sırasını güncelle
+            current = self.parent.playlist.get_node_at_index(current_row)
+            prev = self.parent.playlist.get_node_at_index(current_row - 1)
+            
+            if current and prev:
+                # Bağlantıları güncelle
+                if prev.prev:
+                    prev.prev.next = current
+                else:
+                    self.parent.playlist.head = current
+                    
+                if current.next:
+                    current.next.prev = prev
+                else:
+                    self.parent.playlist.tail = prev
+                    
+                current.prev = prev.prev
+                prev.next = current.next
+                current.next = prev
+                prev.prev = current
+                
+                # Playlist'i kaydet
+                from models.playlist_manager import PlaylistManager
+                PlaylistManager.save_playlist(self.parent.playlist.get_all_songs())
 
     def move_item_down(self):
         current_row = self.song_list.currentRow()
         if current_row < self.song_list.count() - 1:
+            # UI'da şarkıyı aşağı taşı
             self.song_list.insertItem(current_row + 1, self.song_list.takeItem(current_row))
             self.song_list.setCurrentRow(current_row + 1)
+            
+            # Playlist'te şarkıların sırasını güncelle
+            current = self.parent.playlist.get_node_at_index(current_row)
+            next_node = self.parent.playlist.get_node_at_index(current_row + 1)
+            
+            if current and next_node:
+                # Bağlantıları güncelle
+                if current.prev:
+                    current.prev.next = next_node
+                else:
+                    self.parent.playlist.head = next_node
+                    
+                if next_node.next:
+                    next_node.next.prev = current
+                else:
+                    self.parent.playlist.tail = current
+                    
+                next_node.prev = current.prev
+                current.next = next_node.next
+                next_node.next = current
+                current.prev = next_node
+                
+                # Playlist'i kaydet
+                from models.playlist_manager import PlaylistManager
+                PlaylistManager.save_playlist(self.parent.playlist.get_all_songs())
